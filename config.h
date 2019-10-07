@@ -347,4 +347,7 @@
 
 // #define IGNORE_FINDS
 
+#define MAX_FACTOR   (1*32)
+
 #endif /* ! _HAVE_CONFIG_H */
+
