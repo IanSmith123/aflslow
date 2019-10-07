@@ -798,6 +798,7 @@ static void add_to_queue(u8* fname, u32 len, u8 passed_det) {
   q->len          = len;
   q->depth        = cur_depth + 1;
   q->passed_det   = passed_det;
+  q->n_fuzz = 1;
 
   if (q->depth > max_depth) max_depth = q->depth;
 
@@ -4773,7 +4774,7 @@ static u32 calculate_score(struct queue_entry* q) {
           break;
       case SLOW:
           fuzz = next_p2(fuzz);
-          fuzz = log(fuzz)/log(2);
+          fuzz = log(fuzz)/log(2.0);
 
           if(q->fuzz_level < 16) {
               factor = ((u32)(1<< q->fuzz_level))/fuzz;
@@ -7774,7 +7775,7 @@ int main(int argc, char** argv) {
   gettimeofday(&tv, &tz);
   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
 
-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:Q")) > 0)
+    while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:Qp:")) > 0)
 
     switch (opt) {
 
@@ -7941,6 +7942,22 @@ int main(int argc, char** argv) {
         if (!mem_limit_given) mem_limit = MEM_LIMIT_QEMU;
 
         break;
+
+      case 'p':
+          OKF("hahahahahahahahah-----------");
+          printf("----------------------------------\n");
+
+            if(!strcmp(optarg, "normal")) {
+              schedule = NORMAL;
+          } else if (!strcmp(optarg, "fast")) {
+              schedule = FAST;
+          } else if (!strcmp(optarg, "slow")) {
+              PFATAL("Hello AFL SLOW");
+              schedule = SLOW;
+          }
+
+
+
 
       default:
 
