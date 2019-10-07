@@ -1,1 +1,8 @@
 docs/README
+# 下一个种子输入策略：
+1. 优先考虑s(i)最小的路径i的输入
+2. 优先考虑f(i)最小的路径i的输入
+其中s(i)是路径i的模糊次数，f(i)是能量，在fuzz.c文件的update_bitmap_score函数中修改
+
+# 能量分配：
+在fuzz.c文件的calculate_score函数中修改
