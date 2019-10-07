@@ -1254,6 +1254,7 @@ static void minimize_bits(u8* dst, u8* src) {
 static void update_bitmap_score(struct queue_entry* q) {
 
   u32 i;
+  u64 fuzz_p2    = q->n_fuzz ;     //next_p2 (q->n_fuzz);
   u64 fav_factor = q->exec_us * q->len;
 
   /* For every byte set in trace_bits[], see if there is a previous winner,
@@ -1266,8 +1267,13 @@ static void update_bitmap_score(struct queue_entry* q) {
        if (top_rated[i]) {
 
          /* Faster-executing or smaller test cases are favored. */
+         u64 top_rated_fuzz_p2    = top_rated[i]->n_fuzz ;//next_p2 (top_rated[i]->n_fuzz);
+         u64 top_rated_fav_factor = top_rated[i]->exec_us * top_rated[i]->len;
 
-         if (fav_factor > top_rated[i]->exec_us * top_rated[i]->len) continue;
+         if (fuzz_p2 > top_rated_fuzz_p2) continue;
+         else if (fuzz_p2 == top_rated_fuzz_p2) {
+
+         if (fav_factor > top_rated_fav_factor) continue;
 
          /* Looks like we're going to win. Decrease ref count for the
             previous winner, discard its trace_bits[] if necessary. */
@@ -1341,8 +1347,8 @@ static void cull_queue(void) {
       top_rated[i]->favored = 1;
       queued_favored++;
 
-      if (!top_rated[i]->was_fuzzed) pending_favored++;
-
+      //if (!top_rated[i]->was_fuzzed) pending_favored++;
+      if (top_rated[i]->fuzz_level == 0) pending_favored++;
     }
 
   q = queue;
