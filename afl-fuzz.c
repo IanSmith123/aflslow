@@ -3186,8 +3186,8 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
       queued_with_cov++;
     }
 
-    queue_top->exec_cksum = hash32(trace_bits, MAP_SIZE, HASH_CONST);
-
+    //queue_top->exec_cksum = hash32(trace_bits, MAP_SIZE, HASH_CONST);
+     queue_top->exec_cksum = cksum;
     /* Try to calibrate inline; this also calls update_bitmap_score() when
        successful. */
 
@@ -4130,8 +4130,10 @@ static void show_stats(void) {
      together, but then cram them into a fixed-width field - so we need to
      put them in a temporary buffer first. */
 
-  sprintf(tmp, "%s%s (%0.02f%%)", DI(current_entry),
-          queue_cur->favored ? "" : "*",
+  //sprintf(tmp, "%s%s (%0.02f%%)", DI(current_entry),
+          //queue_cur->favored ? "" : "*",
+  sprintf(tmp, "%s%s%d (%0.02f%%)", DI(current_entry),
+          queue_cur->favored ? "." : "*", queue_cur->fuzz_level,
           ((double)current_entry * 100) / queued_paths);
 
   SAYF(bV bSTOP "  now processing : " cRST "%-17s " bSTG bV bSTOP, tmp);
@@ -5035,7 +5037,8 @@ static u8 fuzz_one(char** argv) {
        possibly skip to them at the expense of already-fuzzed or non-favored
        cases. */
 
-    if ((queue_cur->was_fuzzed || !queue_cur->favored) &&
+    //if ((queue_cur->was_fuzzed || !queue_cur->favored) &&
+     if ((queue_cur->fuzz_level > 0 || !queue_cur->favored) &&
         UR(100) < SKIP_TO_NEW_PROB) return 1;
 
   } else if (!dumb_mode && !queue_cur->favored && queued_paths > 10) {
@@ -5044,8 +5047,8 @@ static u8 fuzz_one(char** argv) {
        The odds of skipping stuff are higher for already-fuzzed inputs and
        lower for never-fuzzed entries. */
 
-    if (queue_cycle > 1 && !queue_cur->was_fuzzed) {
-
+   // if (queue_cycle > 1 && !queue_cur->was_fuzzed) {
+    if (queue_cycle > 1 && queue_cur->fuzz_level == 0) {
       if (UR(100) < SKIP_NFAV_NEW_PROB) return 1;
 
     } else {
@@ -5143,12 +5146,20 @@ static u8 fuzz_one(char** argv) {
    *********************/
 
   orig_perf = perf_score = calculate_score(queue_cur);
+  if (perf_score == 0) goto abandon_entry;
 
   /* Skip right away if -d is given, if we have done deterministic fuzzing on
      this entry ourselves (was_fuzzed), or if it has gone through deterministic
      testing in earlier, resumed runs (passed_det). */
 
-  if (skip_deterministic || queue_cur->was_fuzzed || queue_cur->passed_det)
+  //if (skip_deterministic || queue_cur->was_fuzzed || queue_cur->passed_det)
+   if (skip_deterministic 
+     || ((!queue_cur->passed_det) 
+        && perf_score < (
+              queue_cur->depth * 30 <= HAVOC_MAX_MULT * 100
+              ? queue_cur->depth * 30 
+              : HAVOC_MAX_MULT * 100))
+     || queue_cur->passed_det)
     goto havoc_stage;
 
   /* Skip deterministic fuzzing if exec path checksum puts this out of scope
@@ -6673,11 +6684,13 @@ abandon_entry:
   /* Update pending_not_fuzzed count if we made it through the calibration
      cycle and have not seen this entry before. */
 
-  if (!stop_soon && !queue_cur->cal_failed && !queue_cur->was_fuzzed) {
-    queue_cur->was_fuzzed = 1;
+  //if (!stop_soon && !queue_cur->cal_failed && !queue_cur->was_fuzzed) {
+   // queue_cur->was_fuzzed = 1;
+  if (!stop_soon && !queue_cur->cal_failed && queue_cur->fuzz_level == 0) {
     pending_not_fuzzed--;
     if (queue_cur->favored) pending_favored--;
   }
+   queue_cur->fuzz_level++;
 
   munmap(orig_in, queue_cur->len);
 
